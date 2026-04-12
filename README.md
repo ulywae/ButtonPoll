@@ -66,6 +66,12 @@ void loop() {
 
 ## License
 
+This system is licensed under the **MIT License**. You are free to use, modify, and distribute this library for hobby or commercial projects. See the [LICENSE](LICENSE) file for more details.
+
+---
+
 ## Made by NEUFA
+Handcrafted with Pure Logic Code by **Ulywae** (@neufa).
+*Part of the NEU Ecosystem — Building professional-grade tools for everyone.*
 
 ---
