@@ -39,7 +39,7 @@ This library communicates via non-overlapping IDs:
 ## How to Use (Quick Start)
 
 ```cpp
-#include "ButtonPoll.h"
+#include <ButtonPoll.h>
 const int pins[] = {32, 33, 25, 26, 27}; // Enter, Up, Down, Manual, Auto
 ButtonPoll btn(pins, 5, LOW);            // Active LOW
 
