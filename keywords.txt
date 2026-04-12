@@ -1,0 +1,17 @@
+#######################################
+# Syntax Coloring Map For ButtonPoll
+#######################################
+
+# Class (Color 1)
+ButtonPoll	KEYWORD1
+
+# Methods (Color 2)
+begin	KEYWORD2
+begin	KEYWORD2
+setCallback	KEYWORD2
+update	KEYWORD2
+setAsSelector	KEYWORD2
+setAsRepeat	KEYWORD2
+refresh	KEYWORD2
+isSelectorActive	KEYWORD2
+getActiveSelectors	KEYWORD2
