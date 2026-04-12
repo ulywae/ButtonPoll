@@ -1,8 +1,6 @@
----
-
 ## ButtonPoll (Input Engine)
 
-ButtonPoll is an input management library (buttons & switches) designed specifically for mission-critical and high-reliability industrial automation systems.
+A lightweight, non-blocking input handler for buttons and selectors with event-based callbacks.
 
 ## Why Use This?
 
