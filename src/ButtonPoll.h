@@ -4,45 +4,42 @@
 #include <Arduino.h>
 
 /**
- * @brief Input Engine
- *
+ * @brief Input Engine Next-Gen (Optimized)
  * Event Contract:
- * 1-N      : Press Event (Momentary)
- * 101-10N  : Release Event (Momentary)
- * 200      : All Selectors Off (Netral)
- * 201-232  : Selector ON (200 + Index)
- * 301-332  : Selector OFF (300 + Index)
+ * 1-N : Press Event
+ * 101-10N : Release Event
+ * 200 : All Selectors Off
+ * 201-232 : Selector ON
+ * 301-332 : Selector OFF
  */
 
 typedef void (*BtnCallback)(uint16_t);
 
-class ButtonPoll
-{
+class ButtonPoll {
 public:
-    ButtonPoll(const int *pins, int count,
-               int activeLevel = LOW,
-               unsigned long debounceMs = 50,
-               unsigned long repeatMs = 300,
-               unsigned long pollInterval = 10);
-
+    ButtonPoll(const int *pins, int count, int activeLevel = LOW, unsigned long debounceMs = 50, unsigned long repeatMs = 300, unsigned long pollInterval = 10);
+    
     void begin();
     void setCallback(BtnCallback cb);
     void update();
 
-    // --- UNIVERSAL CONFIGURATION ---
-    void setAsSelector(uint8_t index); // Register index (1..N) as Latched/Switch
-    void setAsRepeat(uint8_t index);   // Register index (1..N) as Repeatable (Hold)
-    void refresh();                    // Force physical synchronization to memory (Cold Boot)
+    // --- CONFIGURATION ---
+    void setAsSelector(uint8_t index); 
+    void setAsRepeat(uint8_t index);
+    void setInvert(uint8_t index); // Set pins to Active HIGH
+    void refresh();
 
     // --- STATE QUERY ---
     bool isSelectorActive(uint8_t index);
     uint32_t getActiveSelectors();
+    bool isMultiPressed(uint32_t mask); // Check combination (eg: 0b11 for btn 1 & 2)
+    bool isLongPressed(uint8_t index, unsigned long threshold); // Check long press
 
 private:
     const int *_pins;
     int _count;
     int _activeLevel;
-    uint16_t _btnLast;
+    uint8_t _btnLast;
     uint8_t _btnPressed;
     uint32_t _btnLastChange;
     uint32_t _btnLastRepeat;
@@ -52,14 +49,15 @@ private:
     unsigned long _pollInterval;
     BtnCallback _callback;
 
-    // Masking & State Management
-    uint32_t _selectorMask;      // Bitmask for Selector type pins
-    uint32_t _repeatMask;        // Bitmask for Repeat type pins
-    uint32_t _lastSelectorState; // Cache the last selector state
+    uint32_t _selectorMask;
+    uint32_t _repeatMask;
+    uint32_t _invertMask;      
+    uint32_t _lastSelectorState;
 
     uint8_t readActiveButton();
     bool isSelector(uint8_t index);
     bool canRepeat(uint8_t index);
+    int getTargetLevel(uint8_t index); // Helper internal
 };
 
 #endif
