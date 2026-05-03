@@ -50,8 +50,8 @@ void setup() {
    btn.setCallback(myHandler);
    btn.setAsRepeat(2);   // The UP button can be held
    btn.setAsRepeat(3);   // The DOWN button can be held
-   btn.setAsSelector(4); // Pin 27 as the Manual Selector
-   btn.setAsSelector(5); // Pin 14 as the Auto Selector
+   btn.setAsSelector(4); // Pin 26 as the Manual Selector
+   btn.setAsSelector(5); // Pin 27 as the Auto Selector
 
    btn.begin();
    btn.refresh(); // Physically synchronize the switch at startup
