@@ -10,9 +10,20 @@ ButtonPoll::ButtonPoll(const int *pins, int count, int activeLevel,
       _selectorMask(0), _repeatMask(0), _invertMask(0), _lastSelectorState(0),
       _lastPoll(0)
 {
+    if (_pins == nullptr)
+    {
+        _count = 0;
+        return;
+    }
 
+    // Batasi jumlah maksimal tombol
     if (count > BUTTONPOLL_MAX_BUTTONS)
         count = BUTTONPOLL_MAX_BUTTONS;
+
+    // Cegah nilai negatif
+    if (count < 0)
+        count = 0;
+
     _count = count;
 
     for (int i = 0; i < BUTTONPOLL_MAX_BUTTONS; i++)
@@ -25,6 +36,9 @@ ButtonPoll::ButtonPoll(const int *pins, int count, int activeLevel,
 
 void ButtonPoll::begin()
 {
+    if (_count == 0 || _pins == nullptr)
+        return;
+
     for (int i = 0; i < _count; i++)
     {
         int level = getTargetLevel(i + 1);
@@ -41,7 +55,10 @@ int ButtonPoll::getTargetLevel(uint8_t index)
     return _activeLevel;
 }
 
-void ButtonPoll::setCallback(BtnCallback cb) { _callback = cb; }
+void ButtonPoll::setCallback(BtnCallback cb)
+{
+    _callback = cb;
+}
 
 void ButtonPoll::setAsSelector(uint8_t index)
 {
@@ -63,23 +80,25 @@ void ButtonPoll::setInvert(uint8_t index)
 
 bool ButtonPoll::isSelector(uint8_t index)
 {
-    return (index > 0 && (_selectorMask & (1UL << (index - 1))) != 0);
+    return (index > 0 && index <= _count && (_selectorMask & (1UL << (index - 1))) != 0);
 }
 
 bool ButtonPoll::canRepeat(uint8_t index)
 {
-    return (index > 0 && (_repeatMask & (1UL << (index - 1))) != 0);
+    return (index > 0 && index <= _count && (_repeatMask & (1UL << (index - 1))) != 0);
 }
 
 uint32_t ButtonPoll::readCurrentPhysical()
 {
     uint32_t result = 0;
+
+    if (_count == 0 || _pins == nullptr)
+        return 0;
+
     for (int i = 0; i < _count; i++)
     {
         if (digitalRead(_pins[i]) == getTargetLevel(i + 1))
-        {
             result |= (1UL << i);
-        }
     }
     return result;
 }
@@ -92,6 +111,9 @@ void ButtonPoll::refresh()
 
 void ButtonPoll::update()
 {
+    if (_count == 0)
+        return;
+
     uint32_t now = millis();
     if (now - _lastPoll < _pollInterval)
         return;
@@ -110,12 +132,10 @@ void ButtonPoll::handleDebounceAndState(uint32_t raw, uint32_t now)
 {
     uint32_t changed = raw ^ _btnLastStable;
 
-    // Catch the target on the first change
     for (int i = 0; i < _count; i++)
     {
         if (changed & (1UL << i))
         {
-            // Save target state (raw value when changed)
             if (raw & (1UL << i))
                 _debounceTarget |= (1UL << i);
             else
@@ -126,7 +146,6 @@ void ButtonPoll::handleDebounceAndState(uint32_t raw, uint32_t now)
         }
     }
 
-    // Commit target after debounce is complete
     for (int i = 0; i < _count; i++)
     {
         if ((_btnDebouncing & (1UL << i)) && (now - _lastDebounceTime[i] >= _debounceMs))
@@ -248,12 +267,12 @@ bool ButtonPoll::isMultiPressed(uint32_t mask)
 
 bool ButtonPoll::isLongPressed(uint8_t index, unsigned long threshold)
 {
+    // Validasi index
     if (index == 0 || index > _count)
         return false;
+
     uint8_t i = index - 1;
     if ((_btnPressed & (1UL << i)) && (_btnLastStable & (1UL << i)))
-    {
         return (millis() - _pressStartTime[i]) >= threshold;
-    }
     return false;
 }
