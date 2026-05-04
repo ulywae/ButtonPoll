@@ -13,51 +13,74 @@
  * 301-332 : Selector OFF
  */
 
+#define BUTTONPOLL_MAX_BUTTONS 32
+
 typedef void (*BtnCallback)(uint16_t);
 
-class ButtonPoll {
+class ButtonPoll
+{
 public:
-    ButtonPoll(const int *pins, int count, int activeLevel = LOW, unsigned long debounceMs = 50, unsigned long repeatMs = 300, unsigned long pollInterval = 10);
-    
-    void begin();
-    void setCallback(BtnCallback cb);
-    void update();
+    // Constructor: pins = pin array, count = number of buttons (max 32), activeLevel = HIGH/LOW,
+    // debounceMs = anti-bounce time, repeatMs = auto-repeat interval,
+    // pollInterval = update call interval (ms)
+    ButtonPoll(const int *pins, int count, int activeLevel = LOW,
+               unsigned long debounceMs = 50, unsigned long repeatMs = 300,
+               unsigned long pollInterval = 10);
 
-    // --- CONFIGURATION ---
-    void setAsSelector(uint8_t index); 
-    void setAsRepeat(uint8_t index);
-    void setInvert(uint8_t index); // Set pins to Active HIGH
+    void begin(); // set pinMode
+    void setCallback(BtnCallback cb);
+    void update(); // call in loop() each time
+
+    // Per button configuration (index 1..count)
+    void setAsSelector(uint8_t index); // mode toggle / selector
+    void setAsRepeat(uint8_t index);   // auto-repeat mode
+    void setInvert(uint8_t index);     // active HIGH (default LOW)
+
+    // Re-synchronize state selector without triggering event
     void refresh();
 
-    // --- STATE QUERY ---
+    // Query state
     bool isSelectorActive(uint8_t index);
     uint32_t getActiveSelectors();
-    bool isMultiPressed(uint32_t mask); // Check combination (eg: 0b11 for btn 1 & 2)
-    bool isLongPressed(uint8_t index, unsigned long threshold); // Check long press
+    bool isMultiPressed(uint32_t mask); // mask bits 0..(count-1)
+    bool isLongPressed(uint8_t index, unsigned long threshold);
 
 private:
     const int *_pins;
     int _count;
     int _activeLevel;
-    uint8_t _btnLast;
-    uint8_t _btnPressed;
-    uint32_t _btnLastChange;
-    uint32_t _btnLastRepeat;
-    uint32_t _lastPoll;
     unsigned long _debounceMs;
     unsigned long _repeatMs;
     unsigned long _pollInterval;
     BtnCallback _callback;
 
+    // Internal state
+    uint32_t _btnLastStable;  // stable state after debounce
+    uint32_t _btnPressed;     // button that has been triggered pressed (non-selector)
+    uint32_t _btnDebouncing;  // button that is currently in the debounce period
+    uint32_t _debounceTarget; // value to be committed after debounce
+
+    unsigned long _lastDebounceTime[BUTTONPOLL_MAX_BUTTONS];
+    unsigned long _pressStartTime[BUTTONPOLL_MAX_BUTTONS];
+    unsigned long _lastRepeatTime[BUTTONPOLL_MAX_BUTTONS];
+
     uint32_t _selectorMask;
     uint32_t _repeatMask;
-    uint32_t _invertMask;      
+    uint32_t _invertMask;
     uint32_t _lastSelectorState;
 
-    uint8_t readActiveButton();
+    unsigned long _lastPoll; // for interval polling
+
+    // Helper
+    int getTargetLevel(uint8_t index);
+    uint32_t readCurrentPhysical();
     bool isSelector(uint8_t index);
     bool canRepeat(uint8_t index);
-    int getTargetLevel(uint8_t index); // Helper internal
+    void handleDebounceAndState(uint32_t raw, uint32_t now);
+    void handlePressEvents(uint32_t now);
+    void handleReleaseEvents(uint32_t now);
+    void handleRepeatEvents(uint32_t now);
+    void handleSelectorChanges(uint32_t stableState, uint32_t now);
 };
 
 #endif
