@@ -77,6 +77,13 @@ void loop() {
 ## License
 Licensed under the **MIT License**. Free for hobby and commercial use.
 
+---
+
+**Note:**  
+This is primarily my personal toolkit. If you find it useful, use it however you like. If you don’t, that’s fine too — it still does its job for me.
+
+---
+
 ## Made by NEUFA
 Handcrafted with Pure Logic
 Code by **Ulywae** (@neufa).
