@@ -3,6 +3,7 @@
 > Lightweight. Predictable. No nonsense.
 > A next-generation button & selector handler for Arduino and ESP platforms.
 
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform: Arduino](https://img.shields.io/badge/Platform-Arduino-00878F?logo=arduino&logoColor=white)](https://arduino.cc)
 [![Platform: ESP32](https://img.shields.io/badge/Platform-ESP32-blue?logo=espressif&logoColor=white)](https://espressif.com)
@@ -92,7 +93,7 @@ Selector OFF = idx + 300
 
 ---
 
-## ⚙️ Features
+## Features
 
 ### Input Modes
 
