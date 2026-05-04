@@ -1,90 +1,243 @@
-# ButtonPoll (Input Engine Next-Gen)
+# ButtonPoll — Deterministic Input Engine for Embedded Systems
 
-A lightweight, non-blocking input handler for buttons and selectors with event-based callbacks. Optimized for extremely low RAM usage using 32-bit masking.
+> Lightweight. Predictable. No nonsense.
+> A next-generation button & selector handler for Arduino and ESP platforms.
 
-## Why Use This?
-* **Deterministic Memory:** Uses the same amount of RAM for 1 or 32 buttons (Single Instance).
-* **Hybrid System:** Handles momentary buttons, latched selectors, and multi-press combinations.
-* **Pro-Grade Logic:** Built-in Debounce, Auto-Repeat, and Per-pin Inversion (Active LOW/HIGH).
-* **Self-Healing:** The `refresh()` function ensures physical switch synchronization during system reset.
-
----
-
-## Event Contract (The Holy Protocol)
-This library communicates via non-overlapping IDs:
-
-
-| ID Range  | Event Type   | Description                                     |
-| --------- | ------------ | ----------------------------------------------- |
-| 1 - N     | Press        | Momentary buttons index 1..N are pressed.       |
-| 101 - 10N | Release      | Momentary buttons index 1..N are released.      |
-| 200       | Neutral      | All selectors are in the OFF / Middle position. |
-| 201 - 232 | Selector ON  | Selector switches index 1..32 are active (ON).  |
-| 301 - 332 | Selector OFF | The Nth switch has just been turned off.        |
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Platform: Arduino](https://img.shields.io/badge/Platform-Arduino-00878F?logo=arduino&logoColor=white)](https://arduino.cc)
+[![Platform: ESP32](https://img.shields.io/badge/Platform-ESP32-blue?logo=espressif&logoColor=white)](https://espressif.com)
+[![Platform: ESP8266](https://img.shields.io/badge/Platform-ESP8266-lightgrey?logo=espressif&logoColor=white)](https://espressif.com)
+[![Language: C++11](https://img.shields.io/badge/C%2B%2B-11-blue.svg)](https://isocpp.org/)
+[![Architecture: 32-bit](https://img.shields.io/badge/Architecture-32--bit-orange.svg)]()
+[![Max Buttons: 32](https://img.shields.io/badge/Max%20Buttons-32-informational.svg)]()
+[![Memory: Heap Free](https://img.shields.io/badge/Memory-Heap--Free-success.svg)]()
+[![Design: Deterministic](https://img.shields.io/badge/Design-Deterministic-critical.svg)]()
 
 ---
 
-## Powerful Features
+## Why ButtonPoll?
 
-1. **setAsRepeat(index):** Enable Auto-Repeat (Hold to scroll). Ideal for UP/DOWN menus.
-2. **setAsSelector(index):** Handles Latched switches without blocking the polling engine.
-3. **setInvert(index):** Support mixed wiring. Set specific pins to **Active HIGH** while others stay **Active LOW**.
-4. **isLongPressed(index, ms):** Precision hold detection without extra RAM overhead.
-5. **isMultiPressed(mask):** Detect button combinations (e.g., Btn 1 + Btn 2) using bitmasks.
+Most button libraries are either:
+
+* too simple (no features), or
+* too complex (bloated, unpredictable)
+
+**ButtonPoll sits right in the middle — engineered, not overengineered.**
+
+### Core Advantages
+
+* **Deterministic Memory**
+  Uses constant RAM regardless of button count (up to 32).
+
+* **Non-Blocking by Design**
+  Fully polling-based. No delays. No interrupts. No surprises.
+
+* **Hybrid Input System**
+  Supports:
+
+  * Momentary buttons
+  * Latched selectors (toggle switches)
+  * Multi-button combinations
+
+* **Production-Grade Logic**
+
+  * Per-button debounce (target-based)
+  * Auto-repeat (hold-to-scroll)
+  * Per-pin inversion (mixed wiring)
+
+* **Self-Healing State**
+
+  * `refresh()` syncs selector state after reset
 
 ---
 
-## How to Use (Quick Start)
+## How It Works
+
+```
+Physical Input
+      ↓
+   Debounce Engine
+      ↓
+  Stable State (Bitmask)
+      ↓
+   Event Dispatch
+```
+
+✔ Single read per cycle
+✔ Fully deterministic behavior
+✔ No raw-state leakage
+
+---
+
+## Event Contract (The Protocol)
+
+All interactions are encoded into compact numeric events:
+
+| Range       | Event Type   | Description               |
+| ----------- | ------------ | ------------------------- |
+| `1 – 32`    | Press        | Button index `N` pressed  |
+| `101 – 132` | Release      | Button index `N` released |
+| `200`       | Neutral      | All selectors OFF         |
+| `201 – 232` | Selector ON  | Selector `N` switched ON  |
+| `301 – 332` | Selector OFF | Selector `N` switched OFF |
+
+### Formula
+
+```
+Press        = idx
+Release      = idx + 100
+Selector ON  = idx + 200
+Selector OFF = idx + 300
+```
+
+---
+
+## ⚙️ Features
+
+### Input Modes
+
+* `setAsSelector(index)` → Toggle / switch behavior
+* `setAsRepeat(index)` → Auto-repeat on hold
+* `setInvert(index)` → Per-pin active HIGH/LOW
+
+---
+
+### Query System
+
+* `isSelectorActive(index)`
+* `getActiveSelectors()`
+* `isMultiPressed(mask)`
+* `isLongPressed(index, threshold)`
+
+---
+
+### Smart Behavior
+
+* Independent debounce per button
+* Target-based debounce (capture → hold → commit)
+* Stable multi-button detection
+* Clean separation: input → state → event
+
+---
+
+## Quick Start
 
 ```cpp
 #include <ButtonPoll.h>
 
-const int pins[] = {2, 3, 4}; // Enter, Up, SecretToggle
+const int pins[] = {2, 3, 4}; // Enter, Up, Toggle
 ButtonPoll btn(pins, 3, LOW);
 
-void myHandler(uint16_t id) {
-    if (id == 1) Serial.println("ENTER Pressed");
-    if (id == 203) Serial.println("SECRET MODE: ON");
+void handle(uint16_t id) {
+    if (id == 1) Serial.println("ENTER pressed");
+    if (id == 103) Serial.println("UP released");
+    if (id == 204) Serial.println("TOGGLE ON");
 }
 
 void setup() {
-    btn.setCallback(myHandler);
-    btn.setAsRepeat(2);    // Enable hold-to-scroll for button 2
-    btn.setAsSelector(3);  // Set button 3 as a toggle switch
-    btn.setInvert(3);      // Button 3 is wired as Active HIGH
-    
+    Serial.begin(115200);
+
+    btn.setCallback(handle);
+
+    btn.setAsRepeat(2);     // Button 2: hold to repeat
+    btn.setAsSelector(3);   // Button 3: toggle switch
+    btn.setInvert(3);       // Active HIGH wiring
+
     btn.begin();
-    btn.refresh();
+    btn.refresh();          // Sync selector state
 }
 
 void loop() {
     btn.update();
 
-    // Custom Logic: Long Press on Button 1 (2 seconds)
+    // Long press (2 seconds)
     if (btn.isLongPressed(1, 2000)) {
-        Serial.println("System Reset initiated...");
+        Serial.println("Long press detected");
     }
 
-    // Custom Logic: Multi-Press (Button 1 & 2 together)
-    if (btn.isMultiPressed(0b011)) { 
-        Serial.println("Combo Detected!");
+    // Multi-press (Btn1 + Btn2)
+    if (btn.isMultiPressed(0b011)) {
+        Serial.println("Combo detected");
     }
 }
 ```
 
 ---
 
+## Performance
+
+* **Heap-free (no dynamic allocation)**
+* Fixed memory footprint
+* Configurable polling interval
+* Optimized for:
+
+  * Arduino (AVR)
+  * ESP8266 / ESP32
+
+---
+
+## Limitations
+
+* Maximum: **32 buttons**
+* Polling-based only (no interrupt mode)
+* Event system uses numeric encoding (by design)
+
+---
+
+## Design Philosophy
+
+> “Build systems that are predictable, not magical.”
+
+ButtonPoll is designed to:
+
+* be simple to reason about
+* behave consistently under all conditions
+* scale without hidden costs
+
+---
+
+## Installation
+
+### Arduino IDE
+
+1. Download ZIP
+2. `Sketch → Include Library → Add .ZIP Library`
+
+### PlatformIO
+
+```ini
+lib_deps =
+    ulywae/ButtonPoll
+```
+
+---
+
 ## License
-Licensed under the **MIT License**. Free for hobby and commercial use.
+
+MIT License — free for personal and commercial use.
 
 ---
 
-**Note:**  
-This is primarily my personal toolkit. If you find it useful, use it however you like. If you don’t, that’s fine too — it still does its job for me.
+## Author
+
+**Ulywae** (@neufa)
+Part of the **NEU Ecosystem**
+
+> Handcrafted with pure logic.
 
 ---
 
-## Made by NEUFA
-Handcrafted with Pure Logic
-Code by **Ulywae** (@neufa).
-*Part of the NEU Ecosystem — Building professional-grade tools for everyone.*
+## Notes
+
+This is primarily a personal toolkit.
+
+If it helps your project — great.
+If not — that’s fine too.
+
+It does exactly what it was built to do.
+
+---
+
+# If You Like It
+
+Give it a star, or just use it silently in your project — both are valid 😄
